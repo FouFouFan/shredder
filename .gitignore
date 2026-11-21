@@ -1,0 +1,39 @@
+# 依赖（本项目不使用 npm/bundler，但保留以兼容可能的本地工具）
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 本地测试产物
+*.log
+*.tmp
+dist/
+build/
+coverage/
+
+# 密钥与环境变量（绝不提交）
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+
+# 编辑器与系统文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 浏览器本地数据快照（手工测试时导出）
+*.localstorage.json
+
+# 测试夹具中的受版权教材（若有）不随仓库分发
+fixtures/*.pdf
+!fixtures/.gitkeep
+
+# 临时 PDF/图片导出
+*.pdf
+!fixtures/**/*.pdf

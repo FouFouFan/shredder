@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>教材思维导图工具 · TMM</title>
+  <meta name="description" content="把 PDF 教材转化为章节思维导图，支持原文定位、标亮与术语卡片。" />
+
+  <!--
+    Content Security Policy (静态安全基线)
+    - 脚本仅允许 'self' 与固定 CDN；禁止 unsafe-eval 与内联脚本。
+    - worker-src 允许 self / blob / 固定 CDN（pdf.js worker 同版本固定 URL）。
+    - connect-src 允许 https 以便用户配置的 AI 接口；开发环境额外允许 localhost。
+    - frame-ancestors / X-Frame-Options 需由静态托管响应头设置（meta 不支持 frame-ancestors）。
+    - 禁止 object-src，避免插件加载。
+  -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; worker-src 'self' blob: https://cdn.jsdelivr.net; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'self'; form-action 'self';"
+  />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/app.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主内容</a>
+
+  <header class="topbar" role="banner">
+    <div class="topbar__brand">
+      <span class="topbar__logo" aria-hidden="true">TMM</span>
+      <span class="topbar__title">教材思维导图</span>
+    </div>
+    <div class="topbar__search" role="search">
+      <input id="global-search" type="search" placeholder="搜索标题或原文…" aria-label="全局搜索" />
+    </div>
+    <div class="topbar__actions">
+      <button id="btn-settings" type="button" class="btn btn--ghost" aria-label="AI 设置">AI 设置</button>
+      <button id="btn-cards" type="button" class="btn btn--ghost" aria-label="概念卡片集">卡片集<span id="cards-count" class="badge" hidden>0</span></button>
+      <button id="btn-reimport" type="button" class="btn btn--ghost" aria-label="重新导入">重新导入</button>
+    </div>
+  </header>
+
+  <nav class="tabbar" id="tabbar" role="tablist" aria-label="章节列表">
+    <!-- 章节标签由 JS 渲染 -->
+  </nav>
+
+  <main id="main" class="workspace">
+    <section class="canvas" id="canvas-area" aria-label="思维导图">
+      <!-- 空态 / 导图容器由 JS 渲染 -->
+      <div id="empty-state" class="empty-state">
+        <div class="empty-state__inner">
+          <h1 class="empty-state__title">把一本 PDF 教材变成可探索的思维导图</h1>
+          <p class="empty-state__desc">导入 PDF 后，应用会按书签或章标题切分章节，并调用你配置的 AI 接口生成知识树。</p>
+          <p class="empty-state__privacy">教材章节文本将发送到你填写的 AI 接口；PDF 原文件不会被上传或持久化。</p>
+          <button id="btn-upload" type="button" class="btn btn--primary">选择 PDF</button>
+          <p class="empty-state__hint">也可把 PDF 拖到此处。建议视口宽度 ≥ 1280px。</p>
+        </div>
+      </div>
+      <svg id="mindmap" class="mindmap" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="思维导图画布" hidden></svg>
+    </section>
+
+    <aside class="detail" id="detail-panel" aria-label="节点详情">
+      <div class="detail__placeholder">点击图中节点查看原文</div>
+    </aside>
+  </main>
+
+  <!-- 卡片抽屉 -->
+  <div id="cards-drawer" class="drawer" hidden aria-hidden="true">
+    <div class="drawer__backdrop" data-close-drawer></div>
+    <div class="drawer__panel" role="dialog" aria-modal="true" aria-label="概念卡片集">
+      <header class="drawer__header">
+        <h2>概念卡片集</h2>
+        <button type="button" class="btn btn--icon" aria-label="关闭卡片集" data-close-drawer>×</button>
+      </header>
+      <div class="drawer__body" id="cards-list"><!-- 卡片由 JS 渲染 --></div>
+    </div>
+  </div>
+
+  <!-- 全局反馈容器 -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- 依赖加载失败 / 全局错误覆盖层 -->
+  <div id="error-overlay" class="error-overlay" hidden>
+    <div class="error-overlay__panel" role="alert">
+      <h2>应用无法正常启动</h2>
+      <p id="error-overlay__message" class="error-overlay__message"></p>
+      <button type="button" class="btn btn--primary" id="error-overlay__retry">重新加载</button>
+    </div>
+  </div>
+
+  <!--
+    CDN 依赖（固定版本 + SRI + crossorigin）。
+    worker 无法直接加 SRI，使用同版本固定 URL 并由 CSP worker-src 约束。
+    加载失败时全局变量不会被注入，由 main.js 检测并展示可读错误。
+  -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"
+    integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"
+    integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+
+  <script type="module" src="/assets/js/main.js"></script>
+</body>
+</html>
