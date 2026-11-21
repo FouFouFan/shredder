@@ -60,6 +60,9 @@
       <svg id="mindmap" class="mindmap" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="思维导图画布" hidden></svg>
     </section>
 
+    <!-- 隐藏的文件选择器（由「选择 PDF」按钮或拖拽触发） -->
+    <input type="file" id="file-input" accept="application/pdf,.pdf" hidden aria-hidden="true" />
+
     <aside class="detail" id="detail-panel" aria-label="节点详情">
       <div class="detail__placeholder">点击图中节点查看原文</div>
     </aside>
@@ -86,6 +89,14 @@
       <h2>应用无法正常启动</h2>
       <p id="error-overlay__message" class="error-overlay__message"></p>
       <button type="button" class="btn btn--primary" id="error-overlay__retry">重新加载</button>
+    </div>
+  </div>
+
+  <!-- 全局加载覆盖层（阻塞性操作期间展示，可取消） -->
+  <div id="loading-overlay" class="loading-overlay" hidden aria-busy="true">
+    <div class="loading-overlay__panel" role="status" aria-live="polite">
+      <div class="loading-overlay__spinner" aria-hidden="true"></div>
+      <p id="loading-overlay__text" class="loading-overlay__text">处理中…</p>
     </div>
   </div>
 

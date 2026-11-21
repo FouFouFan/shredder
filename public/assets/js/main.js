@@ -62,6 +62,24 @@ function showFatalError(message) {
   retry.addEventListener('click', () => location.reload(), { once: true });
 }
 
+/** 全局加载覆盖层：阻塞性操作期间展示。 */
+const Loading = (() => {
+  const overlay = () => document.getElementById('loading-overlay');
+  const text = () => document.getElementById('loading-overlay__text');
+  function show(message = '处理中…') {
+    const el = overlay();
+    if (!el) return;
+    const t = text();
+    if (t) t.textContent = message;
+    el.hidden = false;
+  }
+  function hide() {
+    const el = overlay();
+    if (el) el.hidden = true;
+  }
+  return { show, hide };
+})();
+
 /** 检查 CDN 依赖是否加载成功（无内联 onerror，纯靠全局变量是否被注入）。 */
 function checkDependencies() {
   const missing = Object.entries(DEPENDENCIES)
@@ -101,20 +119,70 @@ function checkViewport() {
 /** 骨架阶段：绑定占位按钮的反馈（实际功能在后续任务实现）。 */
 function bindSkeletonActions() {
   const uploadBtn = document.getElementById('btn-upload');
+  const fileInput = document.getElementById('file-input');
   const settingsBtn = document.getElementById('btn-settings');
   const cardsBtn = document.getElementById('btn-cards');
   const reimportBtn = document.getElementById('btn-reimport');
+  const canvasArea = document.getElementById('canvas-area');
 
   const notImpl = (name) => {
     Toast.show(`${name} 将在后续版本中可用。`, { type: 'warning' });
   };
 
-  if (uploadBtn) uploadBtn.addEventListener('click', () => notImpl('PDF 导入'));
+  // 文件选择：按钮触发隐藏 input；实际解析由 T2.1 实现
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (file) {
+        Toast.show(`已选择文件「${file.name}」，PDF 导入功能将在后续版本中实现。`, { type: 'info' });
+      }
+      fileInput.value = '';
+    });
+  }
+
+  // 拖拽：仅 UI 反馈与占位处理，实际导入由 T2.1 实现
+  if (canvasArea) {
+    let dragDepth = 0;
+    canvasArea.addEventListener('dragenter', (e) => {
+      e.preventDefault();
+      dragDepth += 1;
+      canvasArea.classList.add('is-dragover');
+    });
+    canvasArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    });
+    canvasArea.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dragDepth -= 1;
+      if (dragDepth <= 0) {
+        dragDepth = 0;
+        canvasArea.classList.remove('is-dragover');
+      }
+    });
+    canvasArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dragDepth = 0;
+      canvasArea.classList.remove('is-dragover');
+      const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) {
+        Toast.show(`已拖入文件「${file.name}」，PDF 导入功能将在后续版本中实现。`, { type: 'info' });
+      }
+    });
+  }
+
   if (settingsBtn) settingsBtn.addEventListener('click', () => notImpl('AI 设置'));
-  if (cardsBtn) cardsBtn.addEventListener('click', () => notImpl('卡片集'));
+  if (cardsBtn) cardsBtn.addEventListener('click', () => {
+    const drawer = document.getElementById('cards-drawer');
+    if (drawer) {
+      drawer.hidden = false;
+      drawer.setAttribute('aria-hidden', 'false');
+    }
+  });
   if (reimportBtn) reimportBtn.addEventListener('click', () => notImpl('重新导入'));
 
-  // 卡片抽屉关闭占位
+  // 卡片抽屉关闭
   document.querySelectorAll('[data-close-drawer]').forEach((el) => {
     el.addEventListener('click', () => {
       const drawer = document.getElementById('cards-drawer');
@@ -123,6 +191,16 @@ function bindSkeletonActions() {
         drawer.setAttribute('aria-hidden', 'true');
       }
     });
+  });
+
+  // Esc 关闭抽屉
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const drawer = document.getElementById('cards-drawer');
+    if (drawer && !drawer.hidden) {
+      drawer.hidden = true;
+      drawer.setAttribute('aria-hidden', 'true');
+    }
   });
 }
 
@@ -148,7 +226,7 @@ function boot() {
 
   bindSkeletonActions();
 
-  console.info('[TMM] 应用骨架已启动（T0.1）。后续任务将接入状态、存储、PDF、AI 与导图模块。');
+  console.info('[TMM] 应用壳已启动（T0.2）。后续任务将接入状态、存储、PDF、AI 与导图模块。');
 }
 
 if (document.readyState === 'loading') {
