@@ -1,0 +1,13 @@
+{
+  "id": "http-500",
+  "description": "上游 500：服务异常，应重试，达上限映射 AI_UPSTREAM",
+  "expect": "AI_UPSTREAM",
+  "httpStatus": 500,
+  "delayMs": 0,
+  "body": {
+    "error": {
+      "message": "Internal server error",
+      "type": "server_error"
+    }
+  }
+}

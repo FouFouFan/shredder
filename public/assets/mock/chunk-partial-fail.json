@@ -1,0 +1,24 @@
+{
+  "id": "chunk-partial-fail",
+  "description": "分块场景：第 1 块成功、第 2 块 500，整章应失败且不保存部分结果",
+  "expect": "AI_UPSTREAM",
+  "httpStatus": 200,
+  "delayMs": 0,
+  "chunks": [
+    {
+      "httpStatus": 200,
+      "delayMs": 0,
+      "content": "{\"sections\":[{\"id\":\"n_00000002-0000-4000-8000-000000000000\",\"title\":\"物质与意识\",\"content\":\"物质是不依赖于人的意识并能为人的意识所反映的客观实在。\",\"terms\":[{\"term\":\"物质\",\"definition\":\"不依赖于人的意识并能为人的意识所反映的客观实在。\"},{\"term\":\"客观实在\",\"definition\":\"独立于人的意识之外而存在的实在性。\"}],\"children\":[{\"id\":\"n_00000003-0000-4000-8000-000000000000\",\"title\":\"意识的能动作用\",\"content\":\"世界统一于物质，物质决定意识，意识对物质具有能动的反作用。\",\"terms\":[{\"term\":\"意识\",\"definition\":\"人脑对客观存在的反映，具有能动作用。\"}],\"children\":[]}]},{\"id\":\"n_00000004-0000-4000-8000-000000000000\",\"title\":\"运动与静止\",\"content\":\"运动是物质的根本属性，时间和空间是运动着的物质的存在形式。\",\"terms\":[{\"term\":\"运动\",\"definition\":\"物质的根本属性，指事物的一切变化和过程。\"}],\"children\":[]}]}"
+    },
+    {
+      "httpStatus": 500,
+      "delayMs": 0,
+      "body": {
+        "error": {
+          "message": "Internal server error",
+          "type": "server_error"
+        }
+      }
+    }
+  ]
+}

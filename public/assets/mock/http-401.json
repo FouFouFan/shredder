@@ -1,0 +1,14 @@
+{
+  "id": "http-401",
+  "description": "上游 401：Key 无效或过期（不自动重试）",
+  "expect": "AI_AUTH",
+  "httpStatus": 401,
+  "delayMs": 0,
+  "body": {
+    "error": {
+      "message": "Invalid API key",
+      "type": "invalid_request_error",
+      "code": "invalid_api_key"
+    }
+  }
+}

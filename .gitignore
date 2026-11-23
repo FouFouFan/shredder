@@ -30,10 +30,9 @@ Thumbs.db
 # 浏览器本地数据快照（手工测试时导出）
 *.localstorage.json
 
-# 测试夹具中的受版权教材（若有）不随仓库分发
-fixtures/*.pdf
-!fixtures/.gitkeep
+# 夹具生成工具链依赖（非发布内容）
+devdeps/
 
-# 临时 PDF/图片导出
+# 临时导出的 PDF 默认忽略，但 fixtures/ 下的自撰夹具需要提交
 *.pdf
 !fixtures/**/*.pdf

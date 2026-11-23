@@ -1,3 +1,0 @@
-# 此目录用于存放测试夹具（PDF / JSON / Mock 响应）。
-# 夹具位于站点根 public/ 之外，不会被部署或通过 URL 暴露。
-# 详见 task.md T0.3 与 README.md「测试夹具」章节。

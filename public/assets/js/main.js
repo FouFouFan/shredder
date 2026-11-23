@@ -1,6 +1,17 @@
 // 教材思维导图工具 — 应用入口（ES Modules）
 // T0.1：建立入口、全局错误捕获、CDN 依赖加载检测、最小可运行壳。
+// T0.3：接入开发模式 Mock 开关（默认关闭，不影响发布路径）。
 // 后续模块（state / storage / pdf / ai / mindmap ...）在对应任务中接入。
+
+import {
+  isMockEnabled,
+  getMockScenarioId,
+  setMockScenarioId,
+  createMockFetch,
+  resetMockState,
+  MOCK_DOC_ID,
+  MOCK_SCENARIO_IDS,
+} from './ai-mock.js';
 
 const DEPENDENCIES = {
   d3: { global: 'd3', label: 'D3.js v7.9.0' },
@@ -204,6 +215,32 @@ function bindSkeletonActions() {
   });
 }
 
+/** 开发模式：启用 Mock 时点亮顶栏 MOCK 标识，并把适配器挂到 window 供控制台调试。 */
+function initMockDevMode() {
+  if (!isMockEnabled()) return;
+
+  const scenarioId = getMockScenarioId();
+  if (!MOCK_SCENARIO_IDS.includes(scenarioId)) {
+    Toast.show(`未知 Mock 场景「${scenarioId}」，可用场景：${MOCK_SCENARIO_IDS.join(', ')}`, { type: 'error' });
+    return;
+  }
+
+  const badge = document.getElementById('mock-badge');
+  if (badge) badge.hidden = false;
+
+  window.__tmmMock = {
+    docId: MOCK_DOC_ID,
+    scenarios: MOCK_SCENARIO_IDS,
+    scenarioId,
+    fetch: createMockFetch({ scenarioId }),
+    useScenario: setMockScenarioId,
+    reset: resetMockState,
+  };
+
+  Toast.show(`开发模式：Mock AI 已启用（场景 ${scenarioId}）`, { type: 'info' });
+  console.info(`[TMM] Mock 已启用，场景 ${scenarioId}；控制台可用 window.__tmmMock。`);
+}
+
 /** 启动应用。 */
 function boot() {
   installGlobalErrorHandlers();
@@ -225,8 +262,9 @@ function boot() {
   }
 
   bindSkeletonActions();
+  initMockDevMode();
 
-  console.info('[TMM] 应用壳已启动（T0.2）。后续任务将接入状态、存储、PDF、AI 与导图模块。');
+  console.info('[TMM] 应用壳已启动（T0.3）。后续任务将接入状态、存储、PDF、AI 与导图模块。');
 }
 
 if (document.readyState === 'loading') {

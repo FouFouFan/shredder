@@ -1,0 +1,13 @@
+{
+  "id": "http-429",
+  "description": "上游 429：限流，应按 1s/3s 退避重试",
+  "expect": "AI_RATE_LIMIT",
+  "httpStatus": 429,
+  "delayMs": 0,
+  "body": {
+    "error": {
+      "message": "Rate limit exceeded",
+      "type": "rate_limit_error"
+    }
+  }
+}

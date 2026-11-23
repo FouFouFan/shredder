@@ -56,19 +56,72 @@ npx serve public
 │  ├─ favicon.svg
 │  └─ assets/
 │     ├─ css/                 # tokens.css、app.css、mindmap.css（后续）
-│     ├─ js/                  # main.js 及各功能模块
+│     ├─ js/                  # main.js 及各功能模块（含 ai-mock.js）
+│     ├─ mock/                # 开发模式 Mock 响应集（启用时才被读取）
 │     └─ icons/
 ├─ fixtures/                  # 测试夹具（位于站点根之外，不通过 URL 暴露）
+│  ├─ *.pdf                   # PDF 夹具
+│  └─ json/                   # 合法/非法树夹具
+├─ tools/                     # 夹具生成与校验脚本（开发专用）
 └─ README.md
 ```
 
 ## 测试夹具
 
-`fixtures/` 用于存放 PDF 与 JSON 测试样本，位于 `public/` 之外，不会被部署到站点。
+`fixtures/` 存放 PDF 与 JSON 测试样本，位于 `public/` 之外，不会被部署，也不会通过 URL 暴露。
 
-夹具用途与 Mock 使用方式在 [task.md T0.3](./task.md) 中定义。
+| 夹具 | 用途 |
+| --- | --- |
+| `fixtures/bookmarked.pdf` | 3 章、顶层书签、正文可提取；书签切章与完整链路 |
+| `fixtures/bookmarked-20ch.pdf` | 20 章 / 300 页、顶层书签；规模、标签与性能 |
+| `fixtures/no-bookmark.pdf` | 含「第一章/第二章/第三章」标题、无书签；正则兜底 |
+| `fixtures/no-chapter.pdf` | 无书签、无章标题；单章回退 |
+| `fixtures/toc-false-positive.pdf` | 目录页列出 10 个章标题；目录误判 |
+| `fixtures/encrypted.pdf` | 用户密码 `123456`；加密分支 |
+| `fixtures/scanned.pdf` | 纯图片、无文本层；`PDF_NO_TEXT` |
+| `fixtures/corrupted.pdf` | 截断文件；`PDF_CORRUPT` |
+| `fixtures/not-a-pdf.pdf` | 非 PDF 字节；`PDF_INVALID_TYPE` |
+| `fixtures/json/valid-tree*.json` | 合法树（3 层 / 4 层），content 均为第一章原文连续子串 |
+| `fixtures/json/invalid-*.json` | 8 类非法树：3 字标题、13 字标题、81 字 content、改写原文、5 层、101 节点、9 子节点、术语不在原文 |
+| `fixtures/json/response-fenced.json` | Markdown 围栏 + 前后说明包裹的 JSON |
 
-> 版权注意：请勿提交受版权保护的完整教材；仅使用公开可分发的小型 PDF 或自行构造的样本。
+所有 PDF 与正文均为自撰示例文本，不含任何受版权保护的教材内容。
+
+### 重新生成与校验
+
+```bash
+# 需要先安装开发依赖（不随仓库提交）
+npm install --prefix devdeps --registry=https://registry.npmmirror.com pdfkit@0.15.2 pdfjs-dist@3.11.174
+
+node tools/make-fixtures.mjs    # 生成 PDF / JSON / Mock 夹具
+node tools/verify-fixtures.mjs  # 用 pdf.js 逐个校验夹具行为，并核对 Mock 与原文一致
+```
+
+`node tools/make-fixtures.mjs --large` 会额外生成 `bookmarked-20ch.pdf`（20 章 / 300 页，F-02）。80 MB / 1500 页（F-08）与 >100 MB / >2000 页（F-09）体积过大，默认不生成、不提交。
+
+## 开发模式 Mock（不消耗真实 Key）
+
+Mock 默认**关闭**。启用方式：
+
+```text
+http://localhost:8080/?mock=1                        # 默认场景 success
+http://localhost:8080/?mock=1&mockScenario=http-401  # 指定场景
+```
+
+启用后顶栏出现 `MOCK` 标识，控制台可用 `window.__tmmMock`（`fetch` / `useScenario` / `reset`）。
+
+| 场景 | 用途 |
+| --- | --- |
+| `success` | 合法响应，content 逐字取自 `bookmarked.pdf` 第一章 |
+| `fenced` | Markdown 围栏 + 前后说明，需要先提取 JSON |
+| `malformed` | 截断 JSON → `AI_BAD_RESPONSE` |
+| `http-401` / `http-403` | 鉴权失败 → `AI_AUTH`（不自动重试） |
+| `http-429` | 限流 → 退避重试 |
+| `http-500` | 上游异常 → 重试后 `AI_UPSTREAM` |
+| `timeout` | 延迟 5s，触发客户端超时 `AI_TIMEOUT` |
+| `chunk-partial-fail` | 第 1 块成功、第 2 块 500，整章应失败且不留半树 |
+
+约束：Mock 使用独立 `docId`（`doc_00000000-0000-4000-8000-000000000000`），开关只写 `sessionStorage` 的 `tmm:dev:*`，不会写入正式文档键 `tmm:v1:*`。发布路径默认不启用 Mock。
 
 ## 已知限制（v1）
 

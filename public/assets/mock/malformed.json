@@ -1,0 +1,26 @@
+{
+  "id": "malformed",
+  "description": "JSON 被截断，无法解析",
+  "expect": "AI_BAD_RESPONSE",
+  "httpStatus": 200,
+  "delayMs": 0,
+  "body": {
+    "id": "chatcmpl-mock-malformed",
+    "object": "chat.completion",
+    "model": "mock-model",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"sections\": [{\"title\": \"物质与意识\", \"content\": \"物质是不依赖"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1200,
+      "completion_tokens": 800
+    }
+  }
+}

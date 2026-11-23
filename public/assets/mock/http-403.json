@@ -1,0 +1,13 @@
+{
+  "id": "http-403",
+  "description": "上游 403：无权限（不自动重试）",
+  "expect": "AI_AUTH",
+  "httpStatus": 403,
+  "delayMs": 0,
+  "body": {
+    "error": {
+      "message": "Forbidden",
+      "type": "permission_error"
+    }
+  }
+}
